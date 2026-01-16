@@ -1,4 +1,4 @@
-# 🚀 Meta Analytics Suite
+# 🚀 Meta Ads Dashboard Power BI
 
 > **Automatización inteligente de datos de campañas de Meta para análisis avanzado en Power BI**
 
