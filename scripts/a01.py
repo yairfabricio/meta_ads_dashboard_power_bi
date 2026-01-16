@@ -986,7 +986,7 @@ if __name__ == "__main__":
 # gasto_mensual_2025.py
 # ----------------- AJUSTES -----------------
 CSV_PATH = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\datasets\data\campaign_1d"
-OUT_XLSX = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\raw_spend_monthly_2026.xlsx"
+OUT_XLSX = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\spend\raw_spend_monthly_2026.xlsx"
 
 # Métrica a agrupar (gastos)
 SPEND_COL = 'spend'
