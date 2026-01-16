@@ -15,15 +15,22 @@ Script completo para extraer, procesar y transformar datos de campañas de Meta 
 - Comparaciones vs semana anterior, mismo mes anterior, mismo año anterior
 - Exportación de tablas de variaciones (%) y valores absolutos
 
-### **3. Transformación para Power BI**
-- **`primera_tabla`**: Datos de campañas (nivel campaign) transformados para Power BI
-- **`segunda_tabla`**: Métricas de video (nivel anuncio) para análisis detallado
-- Variables globales disponibles directamente en Power BI Desktop
+### **3. Transformación ETL**
+- **`primera_tabla`**: Datos de campañas optimizados para Power BI
+- **`segunda_tabla`**: Métricas de video a nivel de anuncio
+- **Variables globales** disponibles directamente en Power BI Desktop
+- **Limpieza y normalización** automática de datos
 
 ### **4. Logging Inteligente**
 - Detección automática de entorno (Power BI vs terminal)
 - En Power BI: muestra resultados en panel de salida + guarda logs
 - En terminal: guarda logs en archivo con timestamp
+
+### **5. Generación de Excel**
+- **Excel mensual automático** con análisis de gastos
+- **Múltiples hojas**: Datos filtrados, resumen mensual, por cuenta, por campaña
+- **Gráfico integrado** de gastos mensuales
+- **Formato profesional** con tablas estilizadas
 
 ## 📋 Estructura del Script
 
@@ -32,6 +39,7 @@ Script completo para extraer, procesar y transformar datos de campañas de Meta 
 # Parte 2: Generación de reporte semanal con PNGs  
 # Parte 3: Transformación primera_tabla para Power BI
 # Parte 4: Extracción segunda_tabla (métricas de video) para Power BI
+# Parte 5: Generación de Excel mensual con gráficos
 ```
 
 ## 🛠️ Configuración
@@ -52,9 +60,10 @@ account_map = {
 ```
 
 ### **Paths de Salida**
-- **Datos crudos**: `C:\Users\Lima - Rodrigo\Documents\3pro\meta\campaign\data\campaign_1d`
+- **Datos crudos**: `C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\datasets\data\campaign_1d`
 - **Reportes PNGs**: `../insight/`
-- **Power BI**: `C:\Users\Lima - Rodrigo\Documents\3pro\meta\campaign\data_powerbi\`
+- **Power BI**: `C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\datasets\data\`
+- **Excel**: `C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\spend\raw_spend_monthly_2026.xlsx`
 - **Logs**: `C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\logs\`
 
 ## 📊 Tablas Generadas
@@ -116,20 +125,19 @@ python a01.py
 ## 📁 Archivos Generados
 
 ```
-📂 meta/
-├── 📂 campaign/
-│   ├── 📂 data/
-│   │   ├── 📄 campaign_1d (datos crudos)
-│   │   └── 📄 campaign_1d_backup_before_append.csv
-│   └── 📂 data_powerbi/
+📂 reporte_semanal/
+├── 📂 datasets/
+│   └── 📂 data/
+│       ├── 📄 campaign_1d (datos crudos)
 │       ├── 📄 powerbi_ready.csv
 │       └── 📄 campaign_video_3s_100pct_1d_ads.csv
-├── 📂 reporte_semanal/
-│   ├── 📂 insight/
-│   │   ├── 📄 tabla_variaciones.png
-│   │   └── 📄 tabla_valores.png
-│   └── 📂 logs/
-│       └── 📄 meta_extractor_YYYYMMDD_HHMMSS.log
+├── 📂 insight/
+│   ├── 📄 tabla_variaciones.png
+│   └── 📄 tabla_valores.png
+├── 📂 logs/
+│   └── 📄 meta_extractor_YYYYMMDD_HHMMSS.log
+├── 📂 spend/
+│   └── 📄 raw_spend_monthly_2026.xlsx (Excel con tabla)
 └── 📂 scripts/
     └── 📄 a01.py
 ```
@@ -138,7 +146,7 @@ python a01.py
 
 ```bash
 pip install pandas numpy matplotlib facebook-business
-pip install python-dateutil pathlib
+pip install python-dateutil pathlib xlsxwriter
 ```
 
 ## ⚙️ Configuración Avanzada
@@ -170,7 +178,8 @@ END_DATE = date(2026, 1, 19)
 3. **Generación** de reporte semanal con PNGs
 4. **Transformación** de datos para Power BI
 5. **Extracción** de métricas de video a nivel anuncio
-6. **Disponibilidad** de dataframes globales para Power BI
+6. **Generación** de Excel mensual con gráficos
+7. **Disponibilidad** de dataframes globales para Power BI
 
 ## 🔄 Automatización
 
@@ -179,6 +188,7 @@ Ideal para ejecución programada (ej. diaria o semanal):
 - Actualiza CSV existente sin duplicados
 - Genera reportes automáticamente
 - Prepara datos para Power BI
+- Crea Excel mensual con análisis
 
 ## 📝 Notas
 
@@ -186,6 +196,7 @@ Ideal para ejecución programada (ej. diaria o semanal):
 - **Logs**: Siempre se guardan con timestamp para auditoría
 - **Backups**: Se crea backup automático antes de actualizar CSV
 - **PNGs**: Se sobrescriben automáticamente en cada ejecución
+- **Excel**: Se genera con análisis mensual y gráficos integrados
 
 ## 🤝 Contribuciones
 
