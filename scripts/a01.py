@@ -85,7 +85,7 @@ account_map = {
 }
 
 # Path al CSV existente (ajusta si tu archivo tiene otro nombre/ruta)
-output_path = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\campaign\data\campaign_1d"
+output_path = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\datasets\data\campaign_1d"
 # Haz backup por seguridad
 backup_path = output_path + '_backup_before_append.csv'
 
@@ -777,7 +777,7 @@ def generar_segunda_tabla():
         KEY_COLS = ["account", "ad_id", "campaign_id", "date_start"]
         
         # Output para segunda tabla
-        OUTPUT_CSV_ADS = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\campaign\data_powerbi\campaign_video_3s_100pct_1d_ads.csv"
+        OUTPUT_CSV_ADS = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\campaign\datasets\data\campaign_video_3s_100pct_1d_ads.csv"
         
         # Usar mismas fechas que la primera parte
         print(f"Usando rango de fechas: {START_DATE} → {END_DATE}")
