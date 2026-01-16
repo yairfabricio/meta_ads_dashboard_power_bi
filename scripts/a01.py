@@ -18,12 +18,11 @@ from pathlib import Path
 import shutil
 import sys
 import traceback
-from datetime import date, datetime, timedelta
 import logging
+import xlsxwriter
 
 # Configurar logging para guardar en archivo en lugar de imprimir en consola
 # Detectar si se ejecuta en Power BI Desktop
-import sys
 POWER_BI_MODE = 'powerbi' in sys.executable.lower() if sys.executable else False
 
 log_dir = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\logs"
@@ -979,3 +978,158 @@ def generar_segunda_tabla():
 # Ejecutar la generación de segunda tabla
 if __name__ == "__main__":
     generar_segunda_tabla()
+
+#----------------------------------------------------------------------------------
+#                        Quinta parte - Generar el excel
+#----------------------------------------------------------------------------------
+
+# gasto_mensual_2025.py
+# ----------------- AJUSTES -----------------
+CSV_PATH = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\datasets\data\campaign_1d"
+OUT_XLSX = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\raw_spend_monthly_2026.xlsx"
+
+# Métrica a agrupar (gastos)
+SPEND_COL = 'spend'
+
+# Opciones:
+GROUP_BY_ACCOUNT = True   # True => genera resumen y (opcional) gráfico por account_id
+GROUP_BY_CAMPAIGN = False # True => resume por campaign_name + mes
+# -------------------------------------------
+
+# Comprobaciones básicas
+if not os.path.exists(CSV_PATH):
+    raise FileNotFoundError(f"No encuentro el CSV en: {CSV_PATH}")
+
+# Leer CSV y normalizar fecha
+df = pd.read_csv(CSV_PATH, encoding='utf-8-sig', parse_dates=['date'], dayfirst=False)
+df['date'] = pd.to_datetime(df['date']).dt.date  # queda tipo datetime.date
+
+# Filtrar desde 2025-01-01
+cutoff = date(2026, 1, 1)
+df2025 = df[df['date'] >= cutoff].copy()
+
+if df2025.empty:
+    print("No hay registros desde 2025 en adelante. Revisa el CSV o el rango de fechas.")
+    sys.exit(0)
+
+# Crear columna month_start (primer día del mes como datetime) — útil para Excel
+df2025['month_start'] = pd.to_datetime(df2025['date']).dt.to_period('M').dt.to_timestamp()
+
+# Función para agregar por mes (y claves opcionales)
+def aggregate_monthly(df_in, by_keys=None):
+    """
+    df_in: DataFrame con columna 'month_start'
+    by_keys: list of extra keys to group by (e.g. ['account_id']) or None
+    """
+    group_keys = ['month_start']
+    if by_keys:
+        group_keys = by_keys + group_keys
+    agg_dict = {}
+    # Intentar agregar spend, impressions y clicks si existen
+    if SPEND_COL in df_in.columns:
+        agg_dict[SPEND_COL] = 'sum'
+    if 'impressions' in df_in.columns:
+        agg_dict['impressions'] = 'sum'
+    # detectar clicks
+    for c in ['clicks_all', 'clicks', 'link_clicks']:
+        if c in df_in.columns:
+            agg_dict[c] = 'sum'
+            break
+    df_agg = df_in.groupby(group_keys).agg(agg_dict).reset_index()
+    # ordenar
+    df_agg = df_agg.sort_values(group_keys).reset_index(drop=True)
+    return df_agg
+
+# 1) Resumen general por mes
+df_monthly = aggregate_monthly(df2025, by_keys=None)
+
+# 2) Resumen por account_id (opcional)
+if GROUP_BY_ACCOUNT and 'account_id' in df2025.columns:
+    df_monthly_by_account = aggregate_monthly(df2025, by_keys=['account_id'])
+else:
+    df_monthly_by_account = None
+
+# 3) Resumen por campaign_name (opcional)
+if GROUP_BY_CAMPAIGN and 'campaign_name' in df2025.columns:
+    df_monthly_by_campaign = aggregate_monthly(df2025, by_keys=['campaign_name'])
+else:
+    df_monthly_by_campaign = None
+
+# 4) Escribir a Excel con gráfico usando xlsxwriter
+with pd.ExcelWriter(OUT_XLSX, engine='xlsxwriter', datetime_format='yyyy-mm-dd') as writer:
+    # Hoja raw filtrada
+    df2025.to_excel(writer, sheet_name='Filtered_2025plus', index=False)
+    workbook  = writer.book
+
+    # Hoja resumen mensual
+    # Asegurarnos de que month_start sea datetime al escribir (xlsxwriter manejará bien)
+    df_monthly.to_excel(writer, sheet_name='Monthly_Spend', index=False)
+    ws = writer.sheets['Monthly_Spend']
+
+    # Agregar formato de tabla
+    nrows, ncols = df_monthly.shape
+    header = [{'header': col} for col in df_monthly.columns]
+    ws.add_table(0, 0, nrows, ncols - 1, {'columns': header, 'style': 'Table Style Medium 9'})
+
+    # Crear gráfico: columnas (gasto por mes)
+    chart = workbook.add_chart({'type': 'column'})
+    # indices para xlsxwriter: (sheetname, first_row, first_col, last_row, last_col)
+    # recordar que pandas escribió encabezados en la fila 0; datos comienzan en fila 1
+    first_row = 1
+    last_row = nrows
+    # encontrar columna index de spend y month_start
+    col_map = {c: i for i, c in enumerate(df_monthly.columns)}
+    if SPEND_COL in col_map:
+        chart.add_series({
+            'name':       'Gasto (Spend)',
+            'categories': ['Monthly_Spend', first_row, col_map['month_start'], last_row, col_map['month_start']],
+            'values':     ['Monthly_Spend', first_row, col_map[SPEND_COL], last_row, col_map[SPEND_COL]],
+            'gap': 2,
+        })
+    # formato del gráfico
+    chart.set_title({'name': 'Gasto mensual (desde 2025)'})
+    chart.set_x_axis({'name': 'Mes', 'date_axis': True, 'num_format': 'mmm yyyy'})
+    chart.set_y_axis({'name': 'Gasto', 'major_gridlines': {'visible': False}})
+    chart.set_legend({'position': 'bottom'})
+
+    # Insertar gráfico en hoja resumen
+    ws.insert_chart('H2', chart, {'x_scale': 1.4, 'y_scale': 1.4})
+
+    # Escribir resumen por account_id si existe
+    if df_monthly_by_account is not None:
+        df_monthly_by_account.to_excel(writer, sheet_name='Monthly_by_Account', index=False)
+        ws2 = writer.sheets['Monthly_by_Account']
+        nr2, nc2 = df_monthly_by_account.shape
+        header2 = [{'header': col} for col in df_monthly_by_account.columns]
+        ws2.add_table(0, 0, nr2, nc2 - 1, {'columns': header2, 'style': 'Table Style Medium 9'})
+        # (Opcional) crear un gráfico por cada account_id — si quieres descomentar el bloque siguiente.
+        # Nota: si hay muchas cuentas, puede quedar pesado.
+        # unique_accounts = df_monthly_by_account['account_id'].unique()
+        # row_offset = 1
+        # for acct in unique_accounts:
+        #     df_ac = df_monthly_by_account[df_monthly_by_account['account_id'] == acct]
+        #     if df_ac.empty: continue
+        #     r_first = df_monthly_by_account.index[df_monthly_by_account['account_id'] == acct][0] + 1
+        #     r_last = r_first + len(df_ac) - 1
+        #     ch = workbook.add_chart({'type': 'column'})
+        #     ch.add_series({
+        #         'name': f'Gasto - {acct}',
+        #         'categories': ['Monthly_by_Account', r_first, col_map['month_start'], r_last, col_map['month_start']],
+        #         'values': ['Monthly_by_Account', r_first, col_map[SPEND_COL], r_last, col_map[SPEND_COL]],
+        #     })
+        #     ws2.insert_chart(1 + row_offset, nc2 + 2, ch)
+        #     row_offset += 15
+
+    # Escribir resumen por campaña si existe
+    if df_monthly_by_campaign is not None:
+        df_monthly_by_campaign.to_excel(writer, sheet_name='Monthly_by_Campaign', index=False)
+        ws3 = writer.sheets['Monthly_by_Campaign']
+        nr3, nc3 = df_monthly_by_campaign.shape
+        header3 = [{'header': col} for col in df_monthly_by_campaign.columns]
+        ws3.add_table(0, 0, nr3, nc3 - 1, {'columns': header3, 'style': 'Table Style Medium 9'})
+
+print(f"✅ Archivo creado: {OUT_XLSX}")
+print("Hojas incluidas: Filtered_2025plus, Monthly_Spend" +
+      (", Monthly_by_Account" if df_monthly_by_account is not None else "") +
+      (", Monthly_by_Campaign" if df_monthly_by_campaign is not None else ""))
+
