@@ -25,7 +25,15 @@ import xlsxwriter
 # Detectar si se ejecuta en Power BI Desktop
 POWER_BI_MODE = 'powerbi' in sys.executable.lower() if sys.executable else False
 
-log_dir = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\logs"
+# Determinar rutas base según entorno
+if POWER_BI_MODE:
+    # En Power BI: usar rutas absolutas (directorio temporal)
+    BASE_DIR = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal"
+else:
+    # En terminal: usar rutas relativas desde scripts/
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+log_dir = os.path.join(BASE_DIR, "logs")
 os.makedirs(log_dir, exist_ok=True)
 
 # Crear nombre de archivo con timestamp
@@ -84,7 +92,7 @@ account_map = {
 }
 
 # Path al CSV existente (ajusta si tu archivo tiene otro nombre/ruta)
-output_path = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\datasets\data\campaign_1d"
+output_path = os.path.join(BASE_DIR, "datasets", "data", "campaign_1d")
 # Haz backup por seguridad
 backup_path = output_path + '_backup_before_append.csv'
 
@@ -396,7 +404,7 @@ def generar_reporte_semanal():
         'ctr (todos / links)': 'CTR (todos / links)',
     }
     
-    output_dir = "../insight/"
+    output_dir = os.path.join(BASE_DIR, "insight")
     out_pct = os.path.join(output_dir, 'tabla_variaciones.png')
     out_val = os.path.join(output_dir, 'tabla_valores.png')
     
@@ -698,7 +706,7 @@ def transformar_para_powerbi():
         print(f"📊 Columnas finales: {list(primera_tabla.columns)}")
         
         # Guardar CSV para Power BI (opcional, como backup)
-        powerbi_path = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\campaign\data_powerbi\powerbi_ready.csv"
+        powerbi_path = os.path.join(BASE_DIR, "datasets", "data", "powerbi_ready.csv")
         os.makedirs(os.path.dirname(powerbi_path), exist_ok=True)
         primera_tabla.to_csv(powerbi_path, index=False, encoding='utf-8-sig', date_format='%Y-%m-%d')
         print(f"💾 CSV para Power BI guardado en: {powerbi_path}")
@@ -776,7 +784,7 @@ def generar_segunda_tabla():
         KEY_COLS = ["account", "ad_id", "campaign_id", "date_start"]
         
         # Output para segunda tabla
-        OUTPUT_CSV_ADS = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\campaign\datasets\data\campaign_video_3s_100pct_1d_ads.csv"
+        OUTPUT_CSV_ADS = os.path.join(BASE_DIR, "datasets", "data", "campaign_video_3s_100pct_1d_ads.csv")
         
         # Usar mismas fechas que la primera parte
         print(f"Usando rango de fechas: {START_DATE} → {END_DATE}")
@@ -985,8 +993,8 @@ if __name__ == "__main__":
 
 # gasto_mensual_2025.py
 # ----------------- AJUSTES -----------------
-CSV_PATH = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\datasets\data\campaign_1d"
-OUT_XLSX = r"C:\Users\Lima - Rodrigo\Documents\3pro\meta\reporte_semanal\spend\raw_spend_monthly_2026.xlsx"
+CSV_PATH = os.path.join(BASE_DIR, "datasets", "data", "campaign_1d")
+OUT_XLSX = os.path.join(BASE_DIR, "spend", "raw_spend_monthly_2026.xlsx")
 
 # Métrica a agrupar (gastos)
 SPEND_COL = 'spend'
