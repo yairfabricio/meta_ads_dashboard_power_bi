@@ -3,3 +3,4 @@
 data_outdated/
 __pycache__/
 *.pyc
+*.ipynb
