@@ -1,0 +1,5 @@
+*.csv
+**/campaign_1d
+data_outdated/
+__pycache__/
+*.pyc
